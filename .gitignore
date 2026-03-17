@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+data/events/
+data/raw/
+logs/
+.venv/
