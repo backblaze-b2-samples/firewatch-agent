@@ -1,4 +1,4 @@
-# FireWatch Agent
+# NVIDIA NemoClaw OpenClaw Wildfire AI Sample Agent
 
 > **NVIDIA Hack for Impact — Eco Impact Track | OpenClaw Bounty**
 
