@@ -40,6 +40,11 @@ def fetch_weather(event: FireEvent) -> WeatherContext:
             humidity_pct=humidity_vals[0] if humidity_vals else None,
         )
     except requests.RequestException as e:
-        log.warning("Weather fetch failed for (%.2f, %.2f): %s",
-                    event.latitude, event.longitude, e)
+        log.warning(
+            "Weather fetch failed for acquisition=%s %s satellite=%s: %s",
+            event.acq_date or "unknown-date",
+            event.acq_time or "unknown-time",
+            event.satellite or "unknown",
+            e,
+        )
         return WeatherContext(error=str(e))

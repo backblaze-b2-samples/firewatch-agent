@@ -40,6 +40,7 @@ from app.agent.summarize import summarize_incident
 from app.agent.openclaw import run_openclaw
 from app.models import FireEvent, WeatherContext
 from app.tools.upload_reports import upload_reports
+from app.privacy import redact_coordinate_pairs
 
 # Setup logging
 LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
@@ -256,7 +257,7 @@ def run_pipeline(
         "upload": upload_result,
         "alert_triggered": oc_result.get("alert_needed"),
         "email": oc_result.get("email_result"),
-        "ops_brief": oc_result.get("ops_brief", ""),
+        "ops_brief": redact_coordinate_pairs(oc_result.get("ops_brief", "")),
     }
     (REPORTS_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2))
 

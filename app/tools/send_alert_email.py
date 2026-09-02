@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.config import RESEND_API_KEY, RESEND_FROM, RESEND_TO, ALERTS_DIR
+from app.privacy import redact_coordinate_pairs
 
 log = logging.getLogger("firewatch")
 
@@ -123,12 +124,12 @@ def _save_locally(
     html_path = ALERTS_DIR / f"{prefix}_alert.html"
     txt_path = ALERTS_DIR / f"{prefix}_alert.txt"
 
-    html_path.write_text(html)
+    html_path.write_text(redact_coordinate_pairs(html))
     txt_path.write_text("\n".join([
-        f"FireWatch Alert: {headline}",
+        f"FireWatch Alert: {redact_coordinate_pairs(headline)}",
         f"Risk Level: {risk_level.upper()}",
-        f"Summary: {summary}",
-        f"Recommended Action: {recommended_action}",
+        f"Summary: {redact_coordinate_pairs(summary)}",
+        f"Recommended Action: {redact_coordinate_pairs(recommended_action)}",
         f"Report: {report_url}",
     ]))
 

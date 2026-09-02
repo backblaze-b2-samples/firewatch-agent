@@ -12,7 +12,6 @@ Output format designed for OpenClaw agent inspection:
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 
 from app.config import EVENTS_DIR
@@ -20,13 +19,14 @@ from app.models import (
     FireEvent, WeatherContext, EvidenceAsset,
     RiskAssessment, IncidentSummary,
 )
+from app.privacy import coarse_location, redact_coordinate_pairs
 
 log = logging.getLogger("firewatch")
 
 
 def make_event_id(event: FireEvent) -> str:
     """Deterministic event ID from location + acquisition timestamp."""
-    date = event.acq_date or datetime.utcnow().strftime("%Y-%m-%d")
+    date = event.acq_date or "unknown-date"
     time = event.acq_time or "0000"
     return f"evt_{event.latitude:.2f}_{event.longitude:.2f}_{date}_{time}"
 
@@ -52,10 +52,10 @@ def save_event_package(
     _write_json(event_dir / "risk.json", risk.model_dump())
 
     if summary:
-        _write_json(event_dir / "summary.json", summary.model_dump())
+        _write_json(event_dir / "summary.json", _redact_summary(summary).model_dump())
         _write_markdown(event_dir / "summary.md", event_id, fire_event, risk, summary)
 
-    log.info("Saved event package: %s", event_dir)
+    log.info("Saved event package: event_id=%s path=%s", event_id, event_dir)
     return event_dir
 
 
@@ -73,23 +73,27 @@ def _write_markdown(
     summary: IncidentSummary,
 ) -> None:
     """Write a human-readable incident summary markdown file."""
-    md = f"""# {summary.headline or event_id}
+    headline = redact_coordinate_pairs(summary.headline or event_id)
+    summary_text = redact_coordinate_pairs(summary.summary)
+    action = redact_coordinate_pairs(summary.recommended_action)
+    reasoning = redact_coordinate_pairs(summary.reasoning)
+    md = f"""# {headline}
 
 **Risk:** {risk.level.upper()} (score {risk.score})
-**Location:** {event.latitude:.4f}, {event.longitude:.4f}
+**Location:** {coarse_location(event.latitude, event.longitude)}
 **Detected:** {event.acq_date} {event.acq_time}
 
 ## Summary
 
-{summary.summary}
+{summary_text}
 
 ## Recommended Action
 
-{summary.recommended_action}
+{action}
 
 ## Reasoning
 
-{summary.reasoning}
+{reasoning}
 
 ## Risk Factors
 
@@ -99,3 +103,13 @@ def _write_markdown(
 
     with open(path, "w") as f:
         f.write(md)
+
+
+def _redact_summary(summary: IncidentSummary) -> IncidentSummary:
+    """Return a copy with coordinate pairs removed from free text fields."""
+    return summary.model_copy(update={
+        "headline": redact_coordinate_pairs(summary.headline),
+        "summary": redact_coordinate_pairs(summary.summary),
+        "recommended_action": redact_coordinate_pairs(summary.recommended_action),
+        "reasoning": redact_coordinate_pairs(summary.reasoning),
+    })

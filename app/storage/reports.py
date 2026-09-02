@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app.config import REPORTS_DIR, ALERT_SCORE_THRESHOLD
 from app.storage.store import make_event_id
+from app.privacy import coarse_location
 
 log = logging.getLogger("firewatch")
 
@@ -39,7 +40,7 @@ def write_daily_report(scored_events: list[tuple]) -> Path:
         lines += [
             f"### {event_id}",
             f"- **Risk:** {risk.level.upper()} (score {risk.score:.0f})",
-            f"- **Location:** {fire.latitude:.4f}, {fire.longitude:.4f}",
+            f"- **Location:** {coarse_location(fire.latitude, fire.longitude)}",
             f"- **Detected:** {fire.acq_date} {fire.acq_time}",
             f"- **Brightness:** {fire.brightness:.0f}K | FRP: {fire.frp:.1f} MW",
             f"- **Temp:** {weather.temperature_c or 'N/A'}°C | Wind: {weather.windspeed_kmh or 'N/A'} km/h",
@@ -85,7 +86,7 @@ def write_alerts_report(scored_events: list[tuple]) -> Path:
             lines += [
                 f"## {event_id}",
                 f"- **Risk:** {risk.level.upper()} (score {risk.score:.0f})",
-                f"- **Location:** {fire.latitude:.4f}, {fire.longitude:.4f}",
+                f"- **Location:** {coarse_location(fire.latitude, fire.longitude)}",
                 f"- **Detected:** {fire.acq_date} {fire.acq_time}",
                 f"- **Brightness:** {fire.brightness:.0f}K | FRP: {fire.frp:.1f} MW",
                 f"- **Temp:** {weather.temperature_c or 'N/A'}°C | Wind: {weather.windspeed_kmh or 'N/A'} km/h",

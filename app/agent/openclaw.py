@@ -21,6 +21,7 @@ from app.agent.prompts import OPENCLAW_BRIEF_PROMPT
 from app.storage.store import make_event_id
 from app.tools.upload_reports import upload_reports
 from app.tools.send_alert_email import send_alert_email
+from app.privacy import redact_coordinate_pairs
 
 log = logging.getLogger("firewatch")
 
@@ -117,11 +118,11 @@ def _get_incident_text(event_id: str, fire, risk) -> tuple[str, str, str]:
     if summary_path.exists():
         try:
             data = json.loads(summary_path.read_text())
-            return (
-                data.get("headline", event_id),
-                data.get("summary", ""),
-                data.get("recommended_action", ""),
-            )
+            return tuple(redact_coordinate_pairs(value or "") for value in (
+                data.get("headline") or event_id,
+                data.get("summary"),
+                data.get("recommended_action"),
+            ))
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -209,10 +210,10 @@ def _generate_ops_brief(
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
+        return redact_coordinate_pairs(resp.json()["choices"][0]["message"]["content"].strip())
     except Exception as e:
         log.warning("OpenClaw LLM brief failed, using fallback: %s", e)
-        return _fallback_brief(scored_events, action_result)
+        return redact_coordinate_pairs(_fallback_brief(scored_events, action_result))
 
 
 def _fallback_brief(scored_events: list[tuple], action_result: dict) -> str:
