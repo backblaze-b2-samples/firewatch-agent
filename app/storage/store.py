@@ -10,6 +10,7 @@ Output format designed for OpenClaw agent inspection:
     summary.md
 """
 
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -25,10 +26,12 @@ log = logging.getLogger("firewatch")
 
 
 def make_event_id(event: FireEvent) -> str:
-    """Deterministic event ID from location + acquisition timestamp."""
+    """Deterministic event ID without exposing raw location in the path."""
     date = event.acq_date or "unknown-date"
     time = event.acq_time or "0000"
-    return f"evt_{event.latitude:.2f}_{event.longitude:.2f}_{date}_{time}"
+    source = f"{event.latitude:.6f}:{event.longitude:.6f}:{date}:{time}"
+    digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+    return f"evt_{date}_{time}_{digest}"
 
 
 def save_event_package(
